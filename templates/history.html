@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Snapshot history{% endblock %}
+{% block content %}
+<section class="grid2">
+  <div class="glass panel"><h2>Snapshot history</h2><div id="list"></div></div>
+  <div class="glass panel"><h2>Snapshot details</h2><div id="detail"><p class="muted">Select a snapshot to see its process states, channel states and events.</p></div></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+async function loadList() {
+  const rows = await (await fetch("/api/snapshots")).json();
+  document.getElementById("list").innerHTML = rows.length ? rows.map(r =>
+    `<div class="hist" onclick="show('${r.snapshot_id}')"><b>${r.snapshot_id}</b> Initiator: ${esc(r.initiator)}
+     <span class="badge ${r.status}">${r.status}</span><br><small>${r.start_time}</small></div>`).join("")
+    : "<p class='muted'>No snapshots yet. Run one from the dashboard.</p>";
+}
+async function show(id) {
+  const d = await (await fetch("/api/snapshots/" + id)).json();
+  const ps = Object.entries(d.process_states).map(([p, s]) => `<li>${esc(p)}: Counter = ${s}</li>`).join("");
+  const cs = Object.entries(d.channel_states).map(([c, m]) => `<li>${esc(c)}: [${esc(m.join(", "))}]</li>`).join("");
+  const ev = d.events.map(e => `<div class="ev ${e.type}"><time>${e.time}</time> ${esc(e.description)}</div>`).join("");
+  document.getElementById("detail").innerHTML =
+    `<h3>${d.snapshot_id} <span class="badge ${d.status}">${d.status}</span></h3>
+     <p>Initiator: ${esc(d.initiator)}<br>Started: ${d.start_time}<br>Completed: ${d.completion_time || "-"}</p>
+     <h3>Process states</h3><ul>${ps}</ul><h3>Channel states</h3><ul>${cs}</ul><h3>Events</h3><div class="log">${ev}</div>`;
+}
+loadList();
+</script>
+{% endblock %}

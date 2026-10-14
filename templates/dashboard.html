@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="stats">
+  <div class="glass stat"><span>Processes</span><b id="st-p">0</b></div>
+  <div class="glass stat"><span>Channels</span><b id="st-c">0</b></div>
+  <div class="glass stat"><span>Messages</span><b id="st-m">0</b></div>
+  <div class="glass stat"><span>Snapshot</span><b id="st-s">IDLE</b></div>
+</section>
+
+<section class="grid">
+  <aside class="glass panel">
+    <h2>Add process</h2>
+    <input id="p-id" placeholder="Process ID (e.g. P5)"><input id="p-state" type="number" placeholder="Initial state" value="0">
+    <button onclick="addProcess()">Add process</button>
+    <h2>Add channel</h2>
+    <select id="c-src"></select><select id="c-dst"></select>
+    <button onclick="addChannel()">Create channel</button>
+    <h2>Send message</h2>
+    <select id="m-from"></select><select id="m-to"></select>
+    <input id="m-text" placeholder="Message text" value="Hello">
+    <button onclick="sendMessage()">Send message</button>
+  </aside>
+
+  <div class="center">
+    <div class="glass viz"><svg id="viz" viewBox="0 0 760 470"></svg>
+      <div class="legend"><i class="dot data"></i>Data message <i class="dia"></i>Marker <i class="bar rec"></i>Channel recording</div>
+    </div>
+    <div class="glass step" id="step"></div>
+    <div class="glass controls">
+      <select id="snap-init"></select>
+      <button onclick="startSnapshot()">Start snapshot</button>
+      <button onclick="nextStep()">Next step</button>
+      <button id="btn-auto" onclick="autoRun()">Auto run</button>
+      <button onclick="pauseRun()">Pause</button>
+      <button class="ghost" onclick="resetSnapshot()">Reset snapshot</button>
+      <button class="ghost" onclick="resetAll()">Reset all</button>
+      <button class="ghost" onclick="loadDemo()">Load demo</button>
+      <label class="check"><input type="checkbox" id="learn" onchange="render()"> Learning mode</label>
+    </div>
+  </div>
+
+  <aside class="glass panel">
+    <h2>Current snapshot</h2>
+    <div id="snap-panel"></div>
+  </aside>
+</section>
+
+<section class="grid2">
+  <div class="glass panel"><h2>Processes</h2><div id="cards" class="cards"></div></div>
+  <div class="glass panel"><h2>Event log</h2><div id="log" class="log"></div></div>
+</section>
+
+<section class="grid2">
+  <div class="glass panel"><h2>How the algorithm works</h2>
+    <ol class="how">
+      <li>The initiator records its local state.</li>
+      <li>The initiator sends a marker on every outgoing channel.</li>
+      <li>A process receiving its first marker records its local state and marks that channel empty.</li>
+      <li>That process forwards markers and starts recording its other incoming channels.</li>
+      <li>A later marker stops recording on its channel; the recorded messages are that channel's state.</li>
+      <li>Process states plus channel states combine into the global snapshot.</li>
+    </ol></div>
+  <div class="glass panel" id="learn-box"><h2>Learning mode</h2>
+    <p>Turn on <b>Learning mode</b> to see a reason under every event and the current step.</p>
+    <p><b>Why is the first marker special?</b> It tells a process the snapshot has started, so it must save its state before it handles anything else.</p>
+    <p><b>What is an in-transit message?</b> A message sent before the sender's snapshot but received after the receiver's snapshot. It is stored in the channel state.</p>
+    <p><b>Why is the result consistent?</b> No recorded process has received a message that its sender had not yet sent.</p></div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/app.js') }}"></script>{% endblock %}
